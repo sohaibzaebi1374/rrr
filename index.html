@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonoGrid Predictor</title>
+
+    <!-- SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 900px;
+            margin: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .success { background: #e6f9f0; color: #047857; }
+        .error { background: #fde8e8; color: #b91c1c; }
+        button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+        }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>سیستم MonoGrid Predictor</h2>
+
+    <div id="fileStatus" class="status">در حال بارگذاری دیتابیس...</div>
+
+    <button onclick="calculate()">اجرای محاسبه</button>
+
+    <pre id="output" style="margin-top:20px;background:#f3f4f6;padding:15px;border-radius:8px;"></pre>
+</div>
+
+<script>
+let sheetsData = {};
+
+async function loadExcelFromUrl(url) {
+    const statusEl = document.getElementById("fileStatus");
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("خطا در دریافت فایل اکسل");
+
+        const arrayBuffer = await response.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+
+        sheetsData = {};
+        workbook.SheetNames.forEach(name => {
+            sheetsData[name] = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1 });
+        });
+
+        if (!sheetsData["MonoGrid"]) {
+            throw new Error("شیت MonoGrid پیدا نشد");
+        }
+
+        statusEl.innerText = "✅ دیتابیس Predictor1.xlsx با موفقیت بارگذاری شد";
+        statusEl.className = "status success";
+
+        calculate();
+
+    } catch (err) {
+        console.error(err);
+        statusEl.innerText = "❌ خطا در بارگذاری دیتابیس";
+        statusEl.className = "status error";
+    }
+}
+
+function calculate() {
+    const output = document.getElementById("output");
+
+    if (!sheetsData["MonoGrid"]) {
+        output.innerText = "دیتابیس هنوز آماده نیست.";
+        return;
+    }
+
+    const sheet = sheetsData["MonoGrid"];
+    output.innerText = "تعداد ردیف‌های شیت MonoGrid: " + sheet.length;
+}
+
+// Auto-load when page loads
+window.addEventListener("DOMContentLoaded", () => {
+    loadExcelFromUrl('./Predictor1.xlsx');
+});
+</script>
+
+</body>
+</html>
